@@ -1,0 +1,102 @@
+---
+title: "Homework 2 - Leprosy Data Analysis"
+author: "Srinidhi Raman"
+date: "2024-09-17"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# **Introduction**
+
+Leprosy is a chronic yet curable infectious disease that affects the skin and eyes. It is known to mainly cause skin lesions and nerve damage. This report investigates the prevalence of leprosy cases across the world in the year 2022. The dataset examines variables such as GDP, Land Area, Population and Region for 183 countries, along with a count of the number of cases in each of these countries.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+# **Dataset**
+
+```{r}
+#Importing the required dataset for this assignment
+leprosy <- read.csv('Homework2_leprosy.csv')
+head(leprosy)
+
+#Calling the required graphing packages
+library(ggplot2)
+library(RColorBrewer)
+library(knitr)
+library(kableExtra)
+leprosy_ggplot <- ggplot(leprosy)
+```
+
+### **Relevant Sub-Information**
+
+```{r results='hide'}
+
+#Q1: Finding the country with the maximum number of leprosy cases
+which.max(leprosy$New_Cases)
+leprosy [76,]
+
+```
+
+India had the highest number of new leprosy cases in 2022 at 103,819.
+
+It is not fair to look at the raw number of cases when comparing disease prevalence because different countries have different populations with different health demographics, wealth gaps and a number of other varying factors. India, for instance, is the most populated country in the world. Therefore it is safe to assume that there will be a lot of cases there. But a country with a lesser population may not have as many cases because there just aren't enough people to get infected. When analyzing data like this with varying populations of each cluster, a generalized percentage or rate may prove more useful.
+
+# **Cases per 100K people**
+
+```{r results = 'hide'}
+#Q2: Creating a variable for cases per 100K people
+reduced_population <- leprosy$Population / 100000
+cases_per_100K <- leprosy$New_Cases / reduced_population
+leprosy_ggplot + geom_histogram(aes(x=cases_per_100K),binwidth=2,fill=c('#8856a7')) + labs(title='Histogram of Cases per 100,000 People',x='Cases per 100K People',y='Frequency')
+
+z <- round(fivenum(cases_per_100K, na.rm = TRUE),digits=2) #inline code command 1
+x <- round(median(cases_per_100K, na.rm = TRUE),digits=2) #inline code command 2
+y <- round(IQR(cases_per_100K, na.r = TRUE),digits=2) #inline code command 3
+```
+
+The graph above is a boxplot showing the distribution of leprosy cases in each country per 100K people. There is a clear right skew. The five number summary of this distribution is `r z`, with the median being `r x` and an interquartile range value of `r y`. There are two outliers in this dataset that are highlighted by the graph, adding to the skew.
+
+# **Leprosy Cases by Region**
+
+```{r results = 'hide'}
+leprosy$cases_per_100K <- cases_per_100K
+#Q3: Comparing cases per 100K across the different regions in the dataset
+leprosy_ggplot + geom_boxplot(aes(x=leprosy$cases_per_100K, fill=leprosy$Region))+labs(fill=c('Legend'),x='Leprosy Cases in 100K Populations',title='Distribution of Leprosy Cases per 100K People by Region')
+```
+
+The graph above is a stacked boxplot displaying the distribution of leprosy cases across the world per 100,000 people, split by region. The five different boxplots each denote a particular region of the world. The graph shows us two key things: Europe has the smallest distribution of cases and Asia/Pacific has the largest. However, it is important to note the outlier points in the boxplots of the Middle East and Africa. This skews both of the distributions heavily to the right.
+
+## **Median Leprosy Cases by Region**
+```{r echo = FALSE, results = 'asis'}
+#Q3: Creating a table for Median of Cases per 100K
+mytable <- aggregate(cases_per_100K~Region, data=leprosy, median)
+
+#Rename columns and round values:
+colnames(mytable) <- c('Region','Median')
+mytable$Median <- round(mytable$Median,2)
+
+#Output table:
+kable_classic(kbl(mytable,caption = "Median Leprosy Cases by Region"),full_width = FALSE)
+```
+The table above shows the different median values of leprosy cases per 100,000 people split by region. For example, using this table we can see that the median number of leprosy cases in the region of Africa is 0.91 for every 100,000 people.
+
+### **Analysis**
+Using this table, we can come to certain conclusions. The median value is highest for Africa, at 0.91 cases per 100,000 people across the different countries. Even though India, which had the highest number of new cases, is in Asia, there are so many countries in Asia with low prevalence that the median was shifted. In Europe, we see that the median is 0, thus we can come to the conclusion that leprosy prevalence in 2022 was little to none.
+
+# **Leprosy Cases by Country GDP**
+```{r results='hide'}
+#Q4: Investigating the relationship between cases per 100K and one other variable - GDP
+leprosy_ggplot + geom_point(aes(x=GDP_billions,y=cases_per_100K))+labs(title='Relationship between GDP and Cases per 100K',x='GDP (In Billions)',y='Cases per 100,000 People')
+xx <- round(cor(use="complete.obs",leprosy$GDP_billions,leprosy$cases_per_100K),digits=2) #inline stat
+```
+## **Analysis**
+
+The graph above compares cases per 100,000 people with the GDP of each country, or the Gross Domestic Product. The GDP of each country does not seem to be correlated with the cases per 100,000 people. The correlation coefficient is `r xx`, which an extremely weak negative correlation. Most of the values are clustered together, except for a few values. Over the x axis, we can see that some countries have extremely high GDP values, but most of them have GDP values under 1000 billion.
+
+# **Conclusion**
+The leprosy dataset has provided some useful insight about the prevalence of the disease in 2022. An initial read of the dataset allowed us to determine that it is not fair to look at the number of new cases per country and make a conclusion about prevalence because a varying number of factors, most importantly population, have an effect on how prevalent a disease can be. Through a thorough analysis of this dataset, we can conclude that India has the most number of new leprosy cases, however Asia is not the region with the highest prevalence of leprosy; it is in fact Africa, because Asia has many countries with low prevalence, which shifted over the median. We were also able to experiment and determine that there is a weak negative correlation between the GDP of a country and the number of cases per 100K people. To learn more about leprosy, visit the [International Leprosy Association Page](https://leprosyhistory.org/).
